@@ -1,0 +1,58 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<link href="book.css" rel="stylesheet" type="text/css" />
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>GPX Viewer</title>
+</head>
+<body>
+<h1 align="center"><strong> GPS Utils Overview</strong></h1>
+<p align="left">GPX Utils is a C# class library that provides a number of methods useful in manipulating GPS Exchange Format (GPX) files and Training Center Database (TCX) files. It provides a menu (see below) that can be used in other applications such as <a href="https://github.com/KennethEvans/VS-GpxViewer">GPX Viewer</a> and <a href="https://github.com/KennethEvans/VS-Exercise-Analyzer">Exercise Analyzer</a>. </p>
+<p align="left">Currently only GPX 1.1 is supported. Extensions, such as Garmin's TrackPointExtensionv2, that give heart rate and cadence are supported.</p>
+<h2 align="left">GPX / TCX  Menu </h2>
+<blockquote>
+  <h3 align="left">Format TCX/GPX</h3>
+  <p align="left">Formats a TCX or GPX file in a form that is easily read by humans. </p>
+  <h3 align="left">Format XML</h3>
+  <p align="left">Formats any XML file, including TCX and GPX,  in a form that is easily read by humans. The output for TCX and GPX files should be the same as above, but a different calculation method using XDocument is used. </p>
+  <h3 align="left">Convert GPX to TCX </h3>
+  <p align="left">Converts all the selected GPX files to TCX files. You will be prompted for where to save them. </p>
+  <h3 align="left">Convert TCX to GPX </h3>
+  <p align="left">Converts all the selected TCX files to GPX files. You will be prompted for where to save them. </p>
+  <h3 align="left">Interpolate TCX from GPX</h3>
+  <p align="left">Allows you to modify a TCX file using the latitude and longitude from a GPX patch file. It is a way to fix tracks that are in the wrong place owing to, say, inaccurate GPS or a GPS dropout. The trackpoints in the TCX file are modified to use the latitude and longitude from the GPX patch file. The result is that the times are retained, but the latitude and longitude values are interpolated from the GPX patch file proportional to the elapsed time in the interval used in the TCX file. This results in a constant speed for the processed points. This speed is the simple average speed = distance / time elapsed. This is hence a method of correcting trackpoints that will least affect the overall speed calculations. </p>
+  <p align="left">You will have to find a GPX file that goes where you went with the TCX exercise. The time in the GPX file is not used. There is an application, <a href="https://github.com/KennethEvans/maplines">Map Lines</a>, that will allow you to draw a path that can be saved as a GPX. It requires having a calibrated map of the area so you can see where to draw.</p>
+  <p align="left">Only the first Activity, Lap, and Track in the TCX file are processed. </p>
+  <p align="left">There are two modes. In both modes you will have a dialog to chose a start and end time. The TCX file will only be corrected in this interval (including the start and end times). The start and end times need to be specified in UTC time, which is the time listed in the TCX and GPX file. The initial times are the start and end times of the TCX file. You can edit these. There are three decimal points to prevent round off if you are unsure. Only time values actually in the TCX file are used so that this relationship holds.</p>
+  <p align="left" class="Code"> start &lt;= actualStart &lt; actualEnd &lt;= end </p>
+  <p align="left">There are two sub items</p>
+	<blockquote>
+  <p align="left"><strong><em> MatchLatLon Mode</em></strong></p>
+  <p align="left">Determines the actual interval by matching the latitude and longitude of the start and end points from the GPX file in the TCX file.  If no match is found for the start (because the GPS was inaccurate at the start), it starts at the start time you specified. It will not go past the specified end time. </p>
+  <p align="left"><strong><em>UseInterval</em></strong></p>
+  <p align="left">Uses the interval as specified. </p>
+	</blockquote>
+  <h3 align="left">Delete TCX Trackpoints</h3>
+  <p align="left">Deletes trackpoints from a TCX file. There is a dialog where you can choose the start and end times for the deletion. These are displayed in UTC time, the same as is used in the file. Only the first Activity, Lap, and Track in the TCX file are processed. </p>
+  <h3 align="left">Change TCX Times</h3>
+  <p align="left">Recalculates the times for a TCX file.   There is a dialog where you can choose the new start time, and it then adds the difference between the new and old start times to all the trackpoint times. The Activity Id, which is a string and may or may not be the old start time, is not changed. (For Polar Beat TCX files the Id is the start time, so it will not be consistent with the new times. It can be changed manually if desired. Use the Lap start time, which is just below.) It will default to saving the new file with the old file name with &quot;.tcx&quot; replaced by&quot;.timechange.tcx&quot;. If there is date and time information in the file name, be sure to change it before clicking &quot;Save&quot;. Only the first Activity, Lap, and Track in the TCX file are processed. </p>
+  <h3 align="left">Recalculate TCX</h3>
+  <p align="left">This program was designed to handle TCX files from <a href="https://flow.polar.com/">Polar Flow</a>. These files have other information besides the latitude, longitude, and time for the trackpoints. This information includes StartTime, TotalTimeSeconds, DistanceMeters, AverageHeartRateBpm, MaximumHeartRateBpm, MaximumSpeed, and AvgSpeed for the Laps, and it includes DistanceMeters for the Trackpoints. These numbers change if the positions of the trackpoints change or if they are deleted. This option recalculates them from the trackpoints currently in the file.</p>
+  <p align="left">What is actually contained in these elements is not specified in the TCX (TrainingCenterDatabasev2) <a href="https://www8.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd">specification</a>. The recalculation uses values as used by Polar. The MaximumSpeed does not not agree with the Polar calculation. (It is not published how they do that calculation, but it probably involves low-pass filtering that is not done here.) Note that what is contained in these elements can be obtained from the trackpoints anyway. That is what the GPX / TCX Utilities do. If you do not use these data and do not care if they are consistent with the data, then you do not need to do this.</p>
+  <p align="left">This step is automatically done at the end of the delete and interpolate calculations above. </p>
+  <h3 align="left">Fix Polar Access GPX</h3>
+  <p align="left">Polar Access produces GPX files with the time given in the form 2020-04-13T13:29:18.002. It is the local time, not the UTC time as required by the GPX specification. The UTC time typically ends in a Z. The corrected version of this time would be 2020-04-13T17:29:18.002Z. To determine this it is necessary to determine the time zone corresponding to the incorrect time, otherwise there is no way to know the UTC offset. The GPX / TCX Utilities do this using the latitude and longitude to get the time zone.  (In the example the actual time zone where the exercise occurred was EDT with a UTC offset of -4.) </p>
+  <p align="left">This menu item will fix the local times to be UTC and will also add category and location elements to the metadata, if this can be determined by the name. The file is corrected in place and the modified time is retained. The corrected file will be formatted. If you are uncertain this procedure will work, you should back up your files somewhere else before running it. </p>
+  <p align="left">In the event Polar Access fixes this issue, this menu item will only add the category and location if it can. If no changes are necessary, the file will not be modified, so it should be safe to run it on files that have already been fixed or that do not have the time issue. </p>
+  <h3 align="left">Single File Info </h3>
+  <p align="left">Shows extensive information from the selected files. This information is shown in the log dialog. </p>
+</blockquote>
+<h2>Installation</h2>
+<p>If you are installing from a download, just unzip the files into a directory somewhere convenient. Then run it from there. If you are installing from a build, copy all the files and directories from the bin/Release directory into a directory somewhere convenient.</p>
+<p>To uninstall, just delete these files.</p>
+<p>To use in another project you neeed to add a Reference to GpsUtils.dll and add the required NuGet packages. </p>
+<h2><a name="Acknowledgements" id="Acknowledgements"></a><strong>Acknowledgements</strong></h2>
+<p>GPS Utils is available from GitHub at <a href="https://github.com/KennethEvans/VS-GpsUtils">https://github.com/KennethEvans/VS-GpsUtils</a>.</p>
+<p>It  uses the NuGet packages GeoTimeZone, LinqToXsd, Newtonsoft.Json, ObjectListView.Official, TimeZoneConverter, and TimeZoneNames.</p>
+</body>
+</html>
