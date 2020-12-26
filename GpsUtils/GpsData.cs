@@ -30,7 +30,7 @@ namespace KEGpsUtils {
         /// Emiprically determined factor to make Polar distances match.
         /// </summary>
         public static readonly double POLAR_DISTANCE_FACTOR = 1.002;
-        public static string TimeFormatUTC { get; } = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'";
+        public static readonly string UTC_FORMAT  = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'";
         public static readonly string AUTHOR = "GpxUtils " + Assembly.GetExecutingAssembly().
                             GetName().Version.ToString();
         public enum InterpolateMode { MatchLatLon, UseInterval }
@@ -77,30 +77,44 @@ namespace KEGpsUtils {
         public int HrMin { get; set; } = 0;
 
         // GPS Constants
-        /**
-          * Nominal radius of the earth in miles. The radius actually varies from
-          * 3937 to 3976 mi.
-          */
-        public const double REARTH = 3956;
-        /** Multiplier to convert miles to nautical miles. */
-        public const double MI2NMI = 1.852; // Exact
-        /** Multiplier to convert degrees to radians. */
-        public const double DEG2RAD = Math.PI / 180.0;
-        /** Multiplier to convert feet to miles. */
-        public const double FT2MI = 1.0 / 5280.0;
-        /** Multiplier to convert meters to miles. */
-        public const double M2MI = .00062137119224;
-        /** Multiplier to convert kilometers to miles. */
-        public const double KM2MI = .001 * M2MI;
-        /** Multiplier to convert meters to feet. */
-        public const double M2FT = 3.280839895;
-        /** Multiplier to convert sec to hours. */
-        public const double SEC2HR = 1.0 / 3600.0;
-        /** Multiplier to convert millisec to hours. */
-        public const double MS2HR = .001 * SEC2HR;
 
-        /** String used for non-available data */
-        private const String NOT_AVAILABLE = "NA";
+        /// <summary>
+        /// Nominal radius of the earth in miles. The radius actually varies from
+        ///  3937 to 3976 mi.
+        /// </summary>
+        public const double REARTH = 3956;
+        /// <summary>
+        /// Multiplier to convert miles to nautical miles.
+        /// </summary>
+        public const double MI2NMI = 1.852; // Exact
+        /// <summary>
+        /// Multiplier to convert degrees to radians.
+        /// </summary>
+        public const double DEG2RAD = Math.PI / 180.0;
+        /// <summary>
+        /// Multiplier to convert feet to miles.
+        /// </summary>
+        public const double FT2MI = 1.0 / 5280.0;
+        /// <summary>
+        /// Multiplier to convert meters to miles.
+        /// </summary>
+        public const double M2MI = .00062137119224;
+        /// <summary>
+        /// Multiplier to convert kilometers to miles.
+        /// </summary>
+        public const double KM2MI = .001 * M2MI;
+        /// <summary>
+        /// Multiplier to convert meters to feet.
+        /// </summary>
+        public const double M2FT = 3.280839895;
+        /// <summary>
+        /// Multiplier to convert sec to hours.
+        /// </summary>
+        public const double SEC2HR = 1.0 / 3600.0;
+        /// <summary>
+        /// Multiplier to convert millisec to hours.
+        /// </summary>
+        public const double MS2HR = .001 * SEC2HR;
 
         /**
          * The speed in m/sec below which there is considered to be no movement for
@@ -1907,8 +1921,8 @@ namespace KEGpsUtils {
                 TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(TZId);
                 DateTime startTimeUtc = TimeZoneInfo.ConvertTimeToUtc(StartTime, tzi);
                 DateTime endTimeUtc = TimeZoneInfo.ConvertTimeToUtc(EndTime, tzi);
-                info += "StartTime[UTC]: " + startTimeUtc.ToString(TimeFormatUTC)
-                    + " End Time[UTC]: " + endTimeUtc.ToString(TimeFormatUTC) + NL;
+                info += "StartTime[UTC]: " + startTimeUtc.ToString(UTC_FORMAT)
+                    + " End Time[UTC]: " + endTimeUtc.ToString(UTC_FORMAT) + NL;
             }
             info += "Duration: " + Duration + NL;
             info += "Distance: " + String.Format("{0:f2} mi", M2MI * Distance) + NL;

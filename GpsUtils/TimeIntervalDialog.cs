@@ -44,7 +44,7 @@ namespace KEGpsUtils {
             }
             set
             {
-                textBoxStartDate.Text = value.ToString(GpsData.TimeFormatUTC);
+                textBoxStartDate.Text = value.ToString(GpsData.UTC_FORMAT);
             }
         }
 
@@ -60,7 +60,7 @@ namespace KEGpsUtils {
             }
             set
             {
-                textBoxEndDate.Text = value.ToString(GpsData.TimeFormatUTC);
+                textBoxEndDate.Text = value.ToString(GpsData.UTC_FORMAT);
             }
         }
 
