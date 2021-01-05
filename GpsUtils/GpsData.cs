@@ -522,8 +522,16 @@ namespace KEGpsUtils {
                 author = new Application_t();
                 author.Name = name;
                 tcx.Author = author;
+                // author is AbstractSource_t, which has abstract=true
+                // and so cannot be in a document without specifying the type, i.e.
+                // <Author xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                //    xsi:type="Application_t">
+                XElement elem = (XElement)author.Untyped;
+                elem.Add(new XAttribute(XNamespace.Xmlns + "xsi",
+                    "http://www.w3.org/2001/XMLSchema-instance"));
+                XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
+                elem.Add(new XAttribute(xsi + "type", "Application_t"));
             }
-
             // Set the TCX Sport name and Training Plan name
             if (!String.IsNullOrEmpty(category)) {
                 activity.Sport = category;
