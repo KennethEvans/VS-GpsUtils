@@ -30,7 +30,7 @@ namespace KEGpsUtils {
         /// Emiprically determined factor to make Polar distances match.
         /// </summary>
         public static readonly double POLAR_DISTANCE_FACTOR = 1.002;
-        public static readonly string UTC_FORMAT  = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'";
+        public static readonly string UTC_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'";
         public static readonly string AUTHOR = "GpxUtils " + Assembly.GetExecutingAssembly().
                             GetName().Version.ToString();
         public enum InterpolateMode { MatchLatLon, UseInterval }
@@ -323,13 +323,13 @@ namespace KEGpsUtils {
                 // STL has location and category in the metadata
                 if (metaData.Untyped != null) {
                     XElement element = (XElement)metaData.Untyped;
-                    foreach (XElement elem in from item in element.Descendants()
-                                              select item) {
-                        if (elem.Name.LocalName == "category") {
-                            data.Category = (string)elem;
+                    foreach (XElement elem1 in from item in element.Descendants()
+                                               select item) {
+                        if (elem1.Name.LocalName == "category") {
+                            data.Category = (string)elem1;
                         }
-                        if (elem.Name.LocalName == "location") {
-                            data.Location = (string)elem;
+                        if (elem1.Name.LocalName == "location") {
+                            data.Location = (string)elem1;
                         }
                     }
                 }
@@ -396,13 +396,13 @@ namespace KEGpsUtils {
                             XElement extensionsElement = extensions.Untyped;
                             foreach (XElement element in extensionsElement.Elements()) {
                                 if (element == null || !element.HasElements) continue;
-                                foreach (XElement elem in from item in element.Descendants()
-                                                          select item) {
-                                    if (elem.Name.LocalName == "hr") {
-                                        hr = (int)elem;
+                                foreach (XElement elem1 in from item in element.Descendants()
+                                                           select item) {
+                                    if (elem1.Name.LocalName == "hr") {
+                                        hr = (int)elem1;
                                     }
-                                    if (elem.Name.LocalName == "cad") {
-                                        cad = (int)elem;
+                                    if (elem1.Name.LocalName == "cad") {
+                                        cad = (int)elem1;
                                     }
                                 }
                             }
@@ -478,7 +478,7 @@ namespace KEGpsUtils {
             // TCX types
             Position_t position;
             HeartRateInBeatsPerMinute_t hrBpm;
-            AbstractSource_t author;
+            AbstractSource_t author, creator;
             Training_t training;
             Plan_t plan;
             ActivityLap_t lap;
@@ -490,6 +490,9 @@ namespace KEGpsUtils {
             tcx.Activities = activities;
             Activity_t activity = new Activity_t();
             activities.Activity.Add(activity);
+
+            XElement elem;
+            XNamespace xsi;
 
             // Metadata
             metadataType metadata = gpx.metadata;
@@ -505,19 +508,19 @@ namespace KEGpsUtils {
                 }
                 if (metadata.Untyped != null) {
                     XElement element = (XElement)metadata.Untyped;
-                    foreach (XElement elem in from item in element.Descendants()
-                                              select item) {
-                        if (elem.Name.LocalName == "category") {
-                            category = (string)elem;
+                    foreach (XElement elem1 in from item in element.Descendants()
+                                               select item) {
+                        if (elem1.Name.LocalName == "category") {
+                            category = (string)elem1;
                         }
-                        if (elem.Name.LocalName == "location") {
-                            location = (string)elem;
+                        if (elem1.Name.LocalName == "location") {
+                            location = (string)elem1;
                         }
                     }
                 }
             }
 
-            // Set the TCX name
+            // Set the TCX Author
             if (name != null) {
                 author = new Application_t();
                 author.Name = name;
@@ -526,13 +529,28 @@ namespace KEGpsUtils {
                 // and so cannot be in a document without specifying the type, i.e.
                 // <Author xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                 //    xsi:type="Application_t">
-                XElement elem = (XElement)author.Untyped;
+                elem = (XElement)author.Untyped;
                 elem.Add(new XAttribute(XNamespace.Xmlns + "xsi",
                     "http://www.w3.org/2001/XMLSchema-instance"));
-                XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
+                xsi = "http://www.w3.org/2001/XMLSchema-instance";
                 elem.Add(new XAttribute(xsi + "type", "Application_t"));
             }
-            // Set the TCX Sport name and Training Plan name
+
+            // Set the Creator for the Activity
+            creator = new Device_t();
+            creator.Name = AUTHOR;
+            activity.Creator = creator;
+            // creator is Device_t, which has abstract=true
+            // and so cannot be in a document without specifying the type, i.e.
+            // <Creator xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            //     xsi:type="Device_t">
+            elem = (XElement)creator.Untyped;
+            elem.Add(new XAttribute(XNamespace.Xmlns + "xsi",
+                "http://www.w3.org/2001/XMLSchema-instance"));
+            xsi = "http://www.w3.org/2001/XMLSchema-instance";
+            elem.Add(new XAttribute(xsi + "type", "Device_t"));
+
+            // Set the TCX Sport name and Training Plan name for the Activity
             if (!String.IsNullOrEmpty(category)) {
                 activity.Sport = category;
                 training = new Training_t();
@@ -602,13 +620,13 @@ namespace KEGpsUtils {
                             XElement extensionsElement = extensions.Untyped;
                             foreach (XElement element in extensionsElement.Elements()) {
                                 if (element == null || !element.HasElements) continue;
-                                foreach (XElement elem in from item in element.Descendants()
-                                                          select item) {
-                                    if (elem.Name.LocalName == "hr") {
-                                        hr = (short)elem;
+                                foreach (XElement elem1 in from item in element.Descendants()
+                                                           select item) {
+                                    if (elem1.Name.LocalName == "hr") {
+                                        hr = (short)elem1;
                                     }
-                                    if (elem.Name.LocalName == "cad") {
-                                        cad = (short)elem;
+                                    if (elem1.Name.LocalName == "cad") {
+                                        cad = (short)elem1;
                                     }
                                 }
                             }
@@ -981,7 +999,7 @@ namespace KEGpsUtils {
                         lap.StartTime = DateTime.MinValue;
                     }
                     // Optional
-                    if(true) {
+                    if (true) {
                         // We aren't calculating calories so set this to remove
                         // an existing value
                         lap.Calories = 0;
@@ -1012,11 +1030,11 @@ namespace KEGpsUtils {
                     if (lap.Extensions != null) {
                         XElement element = (XElement)lap.Extensions;
                         if (element != null) {
-                            foreach (XElement elem in from item in element.Descendants()
-                                                      select item) {
-                                if (elem.Name.LocalName == "AvgSpeed") {
+                            foreach (XElement elem1 in from item in element.Descendants()
+                                                       select item) {
+                                if (elem1.Name.LocalName == "AvgSpeed") {
                                     // Assume m/sec
-                                    elem.Value = $"{data.SpeedAvg / POLAR_DISTANCE_FACTOR}";
+                                    elem1.Value = $"{data.SpeedAvg / POLAR_DISTANCE_FACTOR}";
                                 }
                             }
                         }
@@ -1586,12 +1604,12 @@ namespace KEGpsUtils {
                     XNamespace ns = element.GetDefaultNamespace();
                     bool categoryFound = false;
                     bool locationFound = false;
-                    foreach (XElement elem in from item in element.Descendants()
-                                              select item) {
-                        if (elem.Name.LocalName == "category") {
+                    foreach (XElement elem1 in from item in element.Descendants()
+                                               select item) {
+                        if (elem1.Name.LocalName == "category") {
                             categoryFound = true;
                         }
-                        if (elem.Name.LocalName == "location") {
+                        if (elem1.Name.LocalName == "location") {
                             locationFound = true;
                         }
                     }
@@ -1803,68 +1821,31 @@ namespace KEGpsUtils {
         }
 
         /// <summary>
-        /// Gets the Location and Category from the file name, using my formats
-        /// for Polar Beat and the standard format from SportsTrackLive.
+        /// Gets the Location and Category from the file name.  First checks if
+        /// the name fits Sportstracklive naming. Then checks for at least 3
+        /// underscores with items matching the date and time. Example is
+        /// Kenneth_Evans_2019-03-08_10-57-52_Walking_Kensington.
+        /// The Category is the token after the time, and the remaining ones
+        /// are the location.
+        /// 
         /// </summary>
         /// <param name="fileName"></param>
         public void setLocationAndCategoryFromFileName(string fileName) {
             if (String.IsNullOrEmpty(fileName) ||
                 String.IsNullOrEmpty(fileName)) return;
-            // Polar
-            if (Creator.ToLower().Contains("polar")) {
-                string name = Path.GetFileNameWithoutExtension(fileName);
-                // Only process up to the first dot
-                int index = name.IndexOf(".");
-                if (index != -1) {
-                    name = name.Substring(0, index);
-                }
-                string[] tokens = name.Split('_');
-
-                if (tokens.Length < 4) {
-                    // Not the expected form for the filename
-                    if (String.IsNullOrEmpty(Category)) Category = "Polar";
-                    if (String.IsNullOrEmpty(Location)) Location = "Polar";
-                    return;
-                }
-                string[] tokens1;
-                int date = 0;
-                int time = 0;
-                // Look for the date and time tokens
-                for (int i = 1; i < tokens.Length; i++) {
-                    tokens1 = tokens[i].Split('-');
-                    if (tokens1.Length == 3) {
-                        if (date == 0) date = i;
-                        else if (time == 0) {
-                            time = i;
-                            break;
-                        }
-                    }
-                }
-                if (time == 0 || time > tokens.Length - 3) {
-                    // Date and time not found
-                    if (String.IsNullOrEmpty(Category)) Category = "Polar";
-                    if (String.IsNullOrEmpty(Location)) Location = "Polar";
-                    return;
-                }
-                if (String.IsNullOrEmpty(Category)) Category = tokens[time + 1];
-                // Assume Category has no _'s.  Then the rest is Location
-                if (String.IsNullOrEmpty(Location)) {
-                    Location = tokens[time + 2];
-                }
-                for (int i = time + 3; i < tokens.Length; i++) {
-                    Location += " " + tokens[i];
-                }
-            }
+            string name;
+            string[] tokens;
+            int index;
             // STL
-            if (Creator.ToLower().Contains("sportstracklive")
+            if (Creator != null && Creator.ToLower().Contains("sportstracklive")
                 && String.IsNullOrEmpty(Category) && String.IsNullOrEmpty(Location)) {
-                string name = Path.GetFileNameWithoutExtension(fileName);
+                name = Path.GetFileNameWithoutExtension(fileName);
                 // Only process up to the first dot
-                int index = name.IndexOf(".");
+                index = name.IndexOf(".");
                 if (index != -1) {
                     name = name.Substring(0, index);
                 }
-                string[] tokens = name.Split('-');
+                tokens = name.Split('-');
                 int nTokens = tokens.Length;
                 if (nTokens < 6) {
                     // Not the expected form for the filename
@@ -1878,6 +1859,44 @@ namespace KEGpsUtils {
                 for (int i = 5; i < nTokens - 1; i++) {
                     Location += " " + tokens[i];
                 }
+                return;
+            }
+            // Other
+            name = Path.GetFileNameWithoutExtension(fileName);
+            // Only process up to the first dot
+            index = name.IndexOf(".");
+            if (index != -1) {
+                name = name.Substring(0, index);
+            }
+            tokens = name.Split('_');
+            if (tokens.Length < 4) {
+                return;
+            }
+            string[] tokens1;
+            int date = 0;
+            int time = 0;
+            // Look for the date and time tokens
+            for (int i = 1; i < tokens.Length; i++) {
+                tokens1 = tokens[i].Split('-');
+                if (tokens1.Length == 3) {
+                    if (date == 0) date = i;
+                    else if (time == 0) {
+                        time = i;
+                        break;
+                    }
+                }
+            }
+            if (time == 0 || time > tokens.Length - 3) {
+                // Date and time not found
+                return;
+            }
+            if (String.IsNullOrEmpty(Category)) Category = tokens[time + 1];
+            // Assume Category has no _'s.  Then the rest is Location
+            if (String.IsNullOrEmpty(Location)) {
+                Location = tokens[time + 2];
+            }
+            for (int i = time + 3; i < tokens.Length; i++) {
+                Location += " " + tokens[i];
             }
         }
 
