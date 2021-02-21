@@ -1,8 +1,8 @@
 # GPS Utils
 
-GpsUtils is a c# class library that provides a number of utilities for dealing with GPX and Training Center Database (TCX) files. It is used to provide the GPX / TCX menu in GPX Viewer \( See https://github.com/KennethEvans/VS-GpxUtils) and is also used in Exercise Analyzer \(See See https://github.com/KennethEvans/VS-Exercise-Analyzer). 
+GpsUtils is a c# class library that provides a number of utilities for dealing with GPX and Training Center Database (TCX) files. It is used to provide the GPX / TCX menu in GPX Viewer \( See https://github.com/KennethEvans/VS-GPXViewer) and is also used in Exercise Analyzer \(See See https://github.com/KennethEvans/VS-Exercise-Analyzer). 
 
-See https://kenevans.net/opensource/GpsUtils/Help/Overview.html
+See https://kenevans.net/opensource/GPSUtils/Help/Overview.html
 
 **Development**
 
