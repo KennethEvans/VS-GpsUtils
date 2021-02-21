@@ -757,25 +757,26 @@ namespace KEGpsUtils {
                             if (tpt.Cadence != null) {
                                 cad = tpt.Cadence.Value;
                             }
-                            if (hr < 0 && cad < 0) continue;
-                            // Add a TrackPointExtensionsV2 extension
-                            extensions = new extensionsType();
-                            extensions.Untyped.Name = defaultNamespace
-                                + "extensions";
-                            waypoint.extensions = extensions;
-                            if (hr >= 0) {
-                                XElement elemHr = new XElement(defaultNamespace
-                                    + "trackPointExtensionT",
-                                  new XElement(TrackPointExtensionsV2_NAMESPACE
-                                  + "hr", hr));
-                                extensions.Untyped.Add(elemHr);
-                            }
-                            if (cad >= 0) {
-                                XElement elemCad = new XElement(defaultNamespace
-                                    + "trackPointExtensionT",
-                                  new XElement(TrackPointExtensionsV2_NAMESPACE
-                                  + "cad", cad));
-                                extensions.Untyped.Add(elemCad);
+                            if (hr >= 0 || cad >= 0) {
+                                // Add a TrackPointExtensionsV2 extension
+                                extensions = new extensionsType();
+                                extensions.Untyped.Name = defaultNamespace
+                                    + "extensions";
+                                waypoint.extensions = extensions;
+                                if (hr >= 0) {
+                                    XElement elemHr = new XElement(defaultNamespace
+                                        + "trackPointExtensionT",
+                                      new XElement(TrackPointExtensionsV2_NAMESPACE
+                                      + "hr", hr));
+                                    extensions.Untyped.Add(elemHr);
+                                }
+                                if (cad >= 0) {
+                                    XElement elemCad = new XElement(defaultNamespace
+                                        + "trackPointExtensionT",
+                                      new XElement(TrackPointExtensionsV2_NAMESPACE
+                                      + "cad", cad));
+                                    extensions.Untyped.Add(elemCad);
+                                }
                             }
                             segment.trkpt.Add(waypoint);
                         }  // End of trackpoints
