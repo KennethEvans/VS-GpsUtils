@@ -68,6 +68,8 @@ namespace KEGpsUtils {
                 new System.Windows.Forms.ToolStripMenuItem();
             ToolStripSeparator toolStripSeparator2 =
                 new System.Windows.Forms.ToolStripSeparator();
+            ToolStripMenuItem findNearPOIFromGpxToolStripMenuItem =
+                new System.Windows.Forms.ToolStripMenuItem();
             ToolStripMenuItem singleFileInfoToolStripMenuItem =
                 new System.Windows.Forms.ToolStripMenuItem();
             ToolStripMenuItem useWholeIntervalToolStripMenuItem =
@@ -90,6 +92,7 @@ namespace KEGpsUtils {
             changeTCXTimesToolStripMenuItem,
             recalculateTCXToolStripMenuItem,
             fixGPXToolStripMenuItem,
+            findNearPOIFromGpxToolStripMenuItem,
             toolStripSeparator2,
             singleFileInfoToolStripMenuItem});
             gpxTcxToolStripMenuItem.Name = "gpxTcxToolStripMenuItem";
@@ -197,6 +200,14 @@ namespace KEGpsUtils {
             // 
             toolStripSeparator2.Name = "toolStripSeparator2";
             toolStripSeparator2.Size = new System.Drawing.Size(541, 6);
+            // 
+            // findNearPOIFromGpxToolStripMenuItem
+            // 
+            findNearPOIFromGpxToolStripMenuItem.Name = "findNearPOIFromGpxToolStripMenuItem";
+            findNearPOIFromGpxToolStripMenuItem.Size = new System.Drawing.Size(544, 54);
+            findNearPOIFromGpxToolStripMenuItem.Text = "Find POI Near GPX...";
+            findNearPOIFromGpxToolStripMenuItem.Click +=
+                new System.EventHandler(OnFindNearPOIFromGpxClick);
             // 
             // singleFileInfoToolStripMenuItem
             // 
@@ -346,6 +357,69 @@ namespace KEGpsUtils {
             }
         }
 
+        public void findNearPOIFromGpx() {
+            string trkFile = null, poiFile = null;
+            OpenFileDialog dlg1 = new OpenFileDialog();
+            dlg1.Filter = "GPX|*.gpx";
+            dlg1.Title = "Select GPX file with tracks or routes";
+            dlg1.Multiselect = false;
+            if (dlg1.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                if (dlg1.FileName == null) {
+                    string msg = "Find Near POI to GPX tracks/routes: Failed to open" +
+                        " track/route file";
+                    raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.WARN, msg));
+                    return;
+                }
+                trkFile = dlg1.FileName;
+            } else {
+                return;
+            }
+            OpenFileDialog dlg2 = new OpenFileDialog();
+            dlg2.Filter = "GPX|*.gpx";
+            dlg2.Title = "Select GPX file with POIs";
+            dlg2.Multiselect = false;
+            if (dlg2.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                if (dlg2.FileName == null) {
+                    string msg = "Find Near POI to GPX tracks/routes: Failed to" +
+                        " open POI file";
+                    raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.WARN, msg));
+                }
+                poiFile = dlg2.FileName;
+                findNearPOIFromGpx(trkFile, poiFile);
+            }
+        }
+
+        public void findNearPOIFromGpx(string trkFile, string poiFile) {
+            try {
+                GpxResult res =
+                    GpsData.findPoiNearGpxTracks(trkFile, poiFile);
+                if (res.GPX == null) {
+                    string msg = "Find Near POI to GPX tracks/routes failed" + NL
+                        + " " + res.Message;
+                    raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.MSG, NL + msg));
+                    return;
+                }
+                gpx poiNear = res.GPX;
+
+                string saveFileName = getSaveName(poiFile, ".foundnear");
+                if (saveFileName != null) {
+                    poiNear.Save(saveFileName);
+                    string msg = "Find Near POI to GPX tracks/routes:" + NL
+                        + " Tracks/routes file=" + trkFile + NL
+                        + " POI file=" + poiFile + NL
+                        + " Output=" + saveFileName + NL
+                        + " " + res.Message;
+                    raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.MSG, NL + msg));
+                } else {
+                    return;
+                }
+            } catch (Exception ex) {
+                string msg = "Error finding Near POI from GPX";
+                raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.EXC, msg, ex));
+                return;
+            }
+        }
+
         public void getSingleFileInfo() {
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.Filter = "GPX and TCX|*.gpx;*.tcx|GPX|*.gpx|TCX|*.tcx";
@@ -458,7 +532,7 @@ namespace KEGpsUtils {
             dlg2.Multiselect = false;
             if (dlg2.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
                 if (dlg2.FileName == null) {
-                    string msg = "Interpolate TCX form GPX: Failed to" +
+                    string msg = "Interpolate TCX from GPX: Failed to" +
                         " open GPX file from which to interpolate";
                     raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.WARN, msg));
                 }
@@ -750,6 +824,10 @@ namespace KEGpsUtils {
 
         private void OnGpxTcxConvertTcxToGpxClick(object sender, EventArgs e) {
             convertTcxToGpx();
+        }
+
+        private void OnFindNearPOIFromGpxClick(object sender, EventArgs e) {
+            findNearPOIFromGpx();
         }
     }
 

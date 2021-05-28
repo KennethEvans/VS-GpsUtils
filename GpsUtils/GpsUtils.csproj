@@ -53,6 +53,9 @@
     <Reference Include="TimeZoneNames, Version=4.1.0.0, Culture=neutral, PublicKeyToken=e20ab7d0d9479841, processorArchitecture=MSIL">
       <HintPath>..\packages\TimeZoneNames.4.1.0\lib\net461\TimeZoneNames.dll</HintPath>
     </Reference>
+    <Reference Include="Utils">
+      <HintPath>..\..\Utils\Utils\bin\Release\net47\Utils.dll</HintPath>
+    </Reference>
     <Reference Include="Xml.Schema.Linq, Version=2.0.2.56002, Culture=neutral, PublicKeyToken=47d0c84d0ebb13e5, processorArchitecture=MSIL">
       <HintPath>..\packages\LinqToXsd.2.0.2\lib\Xml.Schema.Linq.dll</HintPath>
     </Reference>

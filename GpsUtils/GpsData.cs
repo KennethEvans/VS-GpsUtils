@@ -3,12 +3,16 @@
 #undef interpVerbose
 
 using GeoTimeZone;
+using KEUtils.InputDialog;
+using KEUtils.Utils;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using System.Windows.Forms;
 using System.Xml.Linq;
 using TimeZoneConverter;
 using TimeZoneNames;
@@ -1979,6 +1983,126 @@ namespace KEGpsUtils {
             info = info.Substring(0, info.Length - NL.Length);
 
             return info;
+        }
+
+        /// <summary>
+        /// Finds POIs that are in the given POI files and are near the tracks
+        /// and routes in the given track/route file.
+        /// </summary>
+        /// <param name="trkFile"></param>
+        /// <param name="poiFile"></param>
+        /// <returns></returns>
+        public static GpxResult findPoiNearGpxTracks(string trkFile, string poiFile) {
+            gpx trkGpx = gpx.Load(trkFile);
+            gpx poiGpx = gpx.Load(poiFile);
+            gpx foundGpx = new gpx();
+            foundGpx.creator = "GpxUtils " + Assembly.GetExecutingAssembly().
+                GetName().Version.ToString();
+
+            // Prompt for the distance
+            double distInMeters = 10000;
+            string prompt = "Enter the distance, a space and then the units (ft, mi, m, km)";
+            InputDialog dlg = new InputDialog("Distance Away", prompt, "10 mi");
+            DialogResult res = dlg.ShowDialog();
+            if (res != DialogResult.OK) {
+                return new GpxResult(null, "Error entering distance");
+            }
+            string val = dlg.Value;
+            string units = "m";
+            double inputDist;
+            if (String.IsNullOrEmpty(val)) {
+                return new GpxResult(null, "No distance entered");
+            }
+            string[] tokens = Regex.Split(val, @"\s+");
+            if (tokens.Length == 0) {
+                return new GpxResult(null, "Invalid distance");
+            }
+            try {
+                inputDist = Convert.ToDouble(tokens[0]);
+            } catch (Exception) {
+                return new GpxResult(null, $"Cannot convert distance=\"{tokens[0]}\" to a number");
+            }
+            if (tokens.Length > 1) {
+                units = tokens[1];
+                
+            }
+            if (units.Equals("ft")) {
+                distInMeters = inputDist/ M2FT;
+            } else if (units.Equals("mi")) {
+                distInMeters = inputDist/ M2MI;
+            } else if (units.Equals("m")) {
+                distInMeters = inputDist;
+            } else if (units.Equals("km")) {
+                distInMeters =inputDist * 1000;
+            } else {
+                return new GpxResult(null, $"Invalid units=\"{units}\"."
+                    + " Must be ft, mi, m, or km");
+            }
+
+            // Find the waypoints in the POI file
+            List<wptType> originalPois = new List<wptType>();
+            List<wptType> foundPois = new List<wptType>();
+            int nPoi = 0;
+            foreach (wptType wpt in poiGpx.wpt) {
+                nPoi++;
+                originalPois.Add(wpt);
+            }
+            int nOrig = originalPois.Count;
+
+            int nTrks = trkGpx.trk.Count;
+            int nRtes = trkGpx.rte.Count;
+
+            // Process the tracks in the trkGpx
+            double dist;
+            bool found;
+            foreach (wptType poi in originalPois) {
+                found = false;
+                foreach (trkType trk in trkGpx.trk) {
+                    foreach (trksegType seg in trk.trkseg) {
+                        foreach (wptType wpt in seg.trkpt) {
+                            dist = greatCircleDistance(
+                                (double)wpt.lat, (double)wpt.lon,
+                                (double)poi.lat, (double)poi.lon);
+                            if (dist <= distInMeters) {
+                                found = true;
+                                foundPois.Add(poi);
+                                break;
+                            }
+                            if (found) break;
+                        }
+                    }
+                }
+            }
+
+            // Process the routes in the trkGpx
+            foreach (wptType poi in originalPois) {
+                found = false;
+                foreach (rteType rte in trkGpx.rte) {
+                    foreach (wptType wpt in rte.rtept) {
+                        dist = greatCircleDistance(
+                            (double)wpt.lat, (double)wpt.lon,
+                            (double)poi.lat, (double)poi.lon);
+                        if (dist <= distInMeters) {
+                            found = true;
+                            foundPois.Add(poi);
+                            break;
+                        }
+                    }
+                }
+            }
+            int nFound = foundPois.Count;
+
+            // Add the waypoints to the output file
+            foreach (wptType poi in foundPois) {
+                foundGpx.wpt.Add(poi);
+            }
+
+            string msg = $" Out of {nOrig} POIs found {nFound} POIs within " +
+                $"{inputDist} {units} of {nTrks} tracks and {nRtes} routes";
+            //if (String.IsNullOrEmpty(fixedItems)) {
+            //    msg = "  Fixed: None";
+            //}
+            return new GpxResult(foundGpx, msg);
         }
 
         ///
