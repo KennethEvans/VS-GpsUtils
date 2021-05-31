@@ -3189,7 +3189,10 @@ namespace www.topografix.com.GPX_1_1 {
         /// </para>
         /// </summary>
         public gpx() {
-            SetInnerType(new gpxType());
+            // KE Modified to explicitly set the version, otherwise the version is not put in the header.
+            gpxType newGpxType = new gpxType();
+            SetInnerType(newGpxType);
+            version = newGpxType.version;
         }
         
         /// <summary>
