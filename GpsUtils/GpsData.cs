@@ -2024,16 +2024,16 @@ namespace KEGpsUtils {
             }
             if (tokens.Length > 1) {
                 units = tokens[1];
-                
+
             }
             if (units.Equals("ft")) {
-                distInMeters = inputDist/ M2FT;
+                distInMeters = inputDist / M2FT;
             } else if (units.Equals("mi")) {
-                distInMeters = inputDist/ M2MI;
+                distInMeters = inputDist / M2MI;
             } else if (units.Equals("m")) {
                 distInMeters = inputDist;
             } else if (units.Equals("km")) {
-                distInMeters =inputDist * 1000;
+                distInMeters = inputDist * 1000;
             } else {
                 return new GpxResult(null, $"Invalid units=\"{units}\"."
                     + " Must be ft, mi, m, or km");
@@ -2042,6 +2042,7 @@ namespace KEGpsUtils {
             // Find the waypoints in the POI file
             List<wptType> originalPois = new List<wptType>();
             List<wptType> foundPois = new List<wptType>();
+            List<wptType> removedPois = new List<wptType>();
             int nPoi = 0;
             foreach (wptType wpt in poiGpx.wpt) {
                 nPoi++;
@@ -2054,42 +2055,47 @@ namespace KEGpsUtils {
 
             // Process the tracks in the trkGpx
             double dist;
-            bool found;
-            foreach (wptType poi in originalPois) {
-                found = false;
-                foreach (trkType trk in trkGpx.trk) {
-                    foreach (trksegType seg in trk.trkseg) {
-                        foreach (wptType wpt in seg.trkpt) {
+            foreach (trkType trk in trkGpx.trk) {
+                foreach (trksegType seg in trk.trkseg) {
+                    foreach (wptType wpt in seg.trkpt) {
+                        removedPois.Clear();
+                        foreach (wptType poi in originalPois) {
                             dist = greatCircleDistance(
                                 (double)wpt.lat, (double)wpt.lon,
                                 (double)poi.lat, (double)poi.lon);
                             if (dist <= distInMeters) {
-                                found = true;
-                                foundPois.Add(poi);
-                                break;
+                                foundPois.Add((wptType)poi);
+                                removedPois.Add(poi);
                             }
-                            if (found) break;
+                        }
+                        if (removedPois.Count > 0) {
+                            // Remove them from the originals so they won't be found again
+                            originalPois.RemoveAll(l => removedPois.Contains(l));
                         }
                     }
                 }
             }
 
             // Process the routes in the trkGpx
-            foreach (wptType poi in originalPois) {
-                found = false;
-                foreach (rteType rte in trkGpx.rte) {
-                    foreach (wptType wpt in rte.rtept) {
+            foreach (rteType rte in trkGpx.rte) {
+                foreach (wptType wpt in rte.rtept) {
+                    removedPois.Clear();
+                    foreach (wptType poi in originalPois) {
                         dist = greatCircleDistance(
                             (double)wpt.lat, (double)wpt.lon,
                             (double)poi.lat, (double)poi.lon);
                         if (dist <= distInMeters) {
-                            found = true;
-                            foundPois.Add(poi);
-                            break;
+                            foundPois.Add((wptType)poi);
+                            removedPois.Add(poi);
                         }
+                    }
+                    if (removedPois.Count > 0) {
+                        // Remove them from the originals so they won't be found again
+                        originalPois.RemoveAll(l => removedPois.Contains(l));
                     }
                 }
             }
+
             int nFound = foundPois.Count;
 
             // Add the waypoints to the output file
