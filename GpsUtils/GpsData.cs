@@ -1,5 +1,5 @@
 ﻿#define convertTimeToUTC
-#undef debugging
+#define debugging
 #undef interpVerbose
 
 using GeoTimeZone;
@@ -25,6 +25,12 @@ using System.Diagnostics;
 namespace KEGpsUtils {
     public class GpsData {
         public static readonly String NL = Environment.NewLine;
+        /// <summary>
+        /// Used to determine how far apart to make interpolated points when
+        /// finding POI near. They will be this factor times the current 
+        /// specified distance.
+        /// </summary>
+        public static double poiInterpDistanceFactor = 1.0/3.0;
 
         /// <summary>
         /// Used for StartTimeRounded.
@@ -1567,7 +1573,6 @@ namespace KEGpsUtils {
                             if (tpt.Time == null) continue;
 #if debugging
                             Debug.WriteLine("start=" + start);
-                            Debug.WriteLine("end=" + end);
                             Debug.WriteLine("time=" + tpt.Time);
                             Debug.WriteLine("time (UTC)=" + tpt.Time.ToUniversalTime());
                             Debug.WriteLine("compare=" + DateTime.Compare(tpt.Time.ToUniversalTime(), start));
@@ -2054,14 +2059,91 @@ namespace KEGpsUtils {
             int nRtes = trkGpx.rte.Count;
 
             // Process the tracks in the trkGpx
-            double dist;
+            double dist, totalDist, interpDist, ratio;
+            double prevLat = 0, prevLon = 0, lat, lon;
             foreach (trkType trk in trkGpx.trk) {
                 foreach (trksegType seg in trk.trkseg) {
                     foreach (wptType wpt in seg.trkpt) {
+                        // Interpolate from previous point if total distance >
+                        // poiInterpDistanceFactor * distInMeters
+                        interpDist = totalDist = 0;
+                        if (!Double.IsNaN(prevLat) && !Double.IsNaN(prevLon)) {
+                            totalDist = greatCircleDistance(
+                            (double)wpt.lat, (double)wpt.lon,
+                            prevLat, prevLon);
+                            interpDist = totalDist;
+                        }
+                        while (interpDist >= 0) {
+                            if (interpDist == 0 || totalDist == 0) {
+                                lat = (double)wpt.lat;
+                                lon = (double)wpt.lon;
+                            } else {
+                                ratio = interpDist / totalDist;
+                                lat = prevLat + ratio * ((double)wpt.lat - prevLat);
+                                lon = prevLon + ratio * ((double)wpt.lon - prevLon);
+                            }
+#if debugging
+                            Debug.Print($"totalDist={totalDist:N2} interpDist={interpDist:N2} " +
+                                $"lat={lat:N8} lon={lon:N8} " +
+                                $"wptLat={(double)wpt.lat:N8} wptLon={(double)wpt.lon:N8} " +
+                                $"prevLat={prevLat:N8} prevLon={prevLon:N8}");
+# endif
+                            removedPois.Clear();
+                            foreach (wptType poi in originalPois) {
+                                dist = greatCircleDistance(
+                                    lat, lon,
+                                    (double)poi.lat, (double)poi.lon);
+                                if (dist <= distInMeters) {
+                                    foundPois.Add((wptType)poi);
+                                    removedPois.Add(poi);
+                                }
+                            }
+                            if (removedPois.Count > 0) {
+                                // Remove them from the originals so they won't be found again
+                                originalPois.RemoveAll(l => removedPois.Contains(l));
+                            }
+                            if (interpDist == 0) break;
+                            interpDist -= poiInterpDistanceFactor * distInMeters;
+                            if (interpDist < 0) interpDist = 0;
+                        }
+                        prevLat = (double)wpt.lat;
+                        prevLon = (double)wpt.lon;
+                    }
+                }
+            }
+
+            // Process the routes in the trkGpx
+            foreach (rteType rte in trkGpx.rte) {
+                prevLat = prevLon = Double.NaN;
+                foreach (wptType wpt in rte.rtept) {
+                    // Interpolate from previous point if total distance >
+                    // poiInterpDistanceFactor * distInMeters
+                    interpDist = totalDist = 0;
+                    if (!Double.IsNaN(prevLat) && !Double.IsNaN(prevLon)) {
+                        totalDist = greatCircleDistance(
+                        (double)wpt.lat, (double)wpt.lon,
+                        prevLat, prevLon);
+                        interpDist = totalDist;
+                    }
+                    while (interpDist >= 0) {
+                        if (interpDist == 0 || totalDist == 0) {
+                            lat = (double)wpt.lat;
+                            lon = (double)wpt.lon;
+                        } else {
+                            ratio = interpDist / totalDist;
+                            lat = prevLat + ratio * ((double)wpt.lat - prevLat);
+                            lon = prevLon + ratio * ((double)wpt.lon - prevLon);
+                        }
+#if debugging
+                        Debug.Print($"totalDist={totalDist:N2} interpDist={interpDist:N2} " +
+                            $"lat={lat:N8} lon={lon:N8} " +
+                            $"wptLat={(double)wpt.lat:N8} wptLon={(double)wpt.lon:N8} " +
+                            $"prevLat={prevLat:N8} prevLon={prevLon:N8}");
+#endif
                         removedPois.Clear();
                         foreach (wptType poi in originalPois) {
                             dist = greatCircleDistance(
-                                (double)wpt.lat, (double)wpt.lon,
+                                lat, lon,
                                 (double)poi.lat, (double)poi.lon);
                             if (dist <= distInMeters) {
                                 foundPois.Add((wptType)poi);
@@ -2072,27 +2154,12 @@ namespace KEGpsUtils {
                             // Remove them from the originals so they won't be found again
                             originalPois.RemoveAll(l => removedPois.Contains(l));
                         }
+                        if (interpDist == 0) break;
+                        interpDist -= poiInterpDistanceFactor * distInMeters;
+                        if (interpDist < 0) interpDist = 0;
                     }
-                }
-            }
-
-            // Process the routes in the trkGpx
-            foreach (rteType rte in trkGpx.rte) {
-                foreach (wptType wpt in rte.rtept) {
-                    removedPois.Clear();
-                    foreach (wptType poi in originalPois) {
-                        dist = greatCircleDistance(
-                            (double)wpt.lat, (double)wpt.lon,
-                            (double)poi.lat, (double)poi.lon);
-                        if (dist <= distInMeters) {
-                            foundPois.Add((wptType)poi);
-                            removedPois.Add(poi);
-                        }
-                    }
-                    if (removedPois.Count > 0) {
-                        // Remove them from the originals so they won't be found again
-                        originalPois.RemoveAll(l => removedPois.Contains(l));
-                    }
+                    prevLat = (double)wpt.lat;
+                    prevLon = (double)wpt.lon;
                 }
             }
 
