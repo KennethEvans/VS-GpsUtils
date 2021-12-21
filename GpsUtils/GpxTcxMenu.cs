@@ -58,6 +58,8 @@ namespace KEGpsUtils {
                 new System.Windows.Forms.ToolStripMenuItem();
             ToolStripMenuItem interpolateTCXFromGPXToolStripMenuItem =
                 new System.Windows.Forms.ToolStripMenuItem();
+            ToolStripMenuItem getGpxHrCadFromTcxMenuItem =
+                new System.Windows.Forms.ToolStripMenuItem();
             ToolStripMenuItem deleteTCXTrackpointsToolStripMenuItem =
                 new System.Windows.Forms.ToolStripMenuItem();
             ToolStripMenuItem changeTCXTimesToolStripMenuItem =
@@ -88,6 +90,7 @@ namespace KEGpsUtils {
             convertGPXToTCXToolStripMenuItem,
             convertTCXToGPXToolStripMenuItem,
             interpolateTCXFromGPXToolStripMenuItem,
+            getGpxHrCadFromTcxMenuItem,
             deleteTCXTrackpointsToolStripMenuItem,
             changeTCXTimesToolStripMenuItem,
             recalculateTCXToolStripMenuItem,
@@ -147,6 +150,14 @@ namespace KEGpsUtils {
             interpolateTCXFromGPXToolStripMenuItem.Name = "interpolateTCXFromGPXToolStripMenuItem";
             interpolateTCXFromGPXToolStripMenuItem.Size = new System.Drawing.Size(544, 54);
             interpolateTCXFromGPXToolStripMenuItem.Text = "Interpolate TCX from GPX...";
+            // 
+            // getGpxHrCadFromTcxMenuItem
+            // 
+            getGpxHrCadFromTcxMenuItem.Name = "getGpxHrCadFromTcxMenuItem";
+            getGpxHrCadFromTcxMenuItem.Size = new System.Drawing.Size(544, 54);
+            getGpxHrCadFromTcxMenuItem.Text = "Get GPX HR/Cadence from TCX...";
+            getGpxHrCadFromTcxMenuItem.Click +=
+                new System.EventHandler(OnGetGpxHrCadFromTcxClick);
             // 
             // matchLatLonToolStripMenuItem
             // 
@@ -574,6 +585,72 @@ namespace KEGpsUtils {
             }
         }
 
+        public void getGpxHrCadFromTcx() {
+            string tcxFile = null, gpxFile = null;
+            OpenFileDialog dlg1 = new OpenFileDialog();
+            dlg1.Filter = "GPX|*.gpx";
+            dlg1.Title = "Select GPX file to interpolate to";
+            dlg1.Multiselect = false;
+            if (dlg1.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                if (dlg1.FileName == null) {
+                    string msg = "Get GPX HR/Cadence from TCX: Failed to" +
+                        " open GPX file to which to interpolate";
+                    raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.WARN, msg));
+                }
+                gpxFile = dlg1.FileName;
+            } else {
+                return;
+            }
+            OpenFileDialog dlg2 = new OpenFileDialog();
+            dlg2.Filter = "TCX|*.tcx";
+            dlg2.Title = "Select TCX file to interpolate from";
+            dlg2.Multiselect = false;
+            if (dlg2.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                if (dlg2.FileName == null) {
+                    string msg = "Get GPX HR/Cadence from TCX: Failed to open" +
+                        " file from which to interpolate";
+                    raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.WARN, msg));
+                    return;
+                }
+                tcxFile = dlg2.FileName;
+                getGpxHrCadFromTcx(gpxFile, tcxFile);
+            } else {
+                return;
+            }
+        }
+
+        public void getGpxHrCadFromTcx(string gpxFile, string tcxFile) {
+            try {
+                GpxResult res =
+                    GpsData.getGpxHrCadFromTcx(gpxFile, tcxFile);
+                if (res.GPX == null) {
+                    string msg = "Get GPX HR/Cadence from TCX failed:" + NL
+                        + "for " + Path.GetFileName(gpxFile) + NL
+                        + " and " + Path.GetFileName(tcxFile) + NL
+                        + res.Message;
+                    raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.ERR, msg));
+                    return;
+                }
+                gpx gpxInterp = res.GPX;
+
+                string saveFileName = getSaveName(gpxFile, ".interpolated");
+                if (saveFileName != null) {
+                    gpxInterp.Save(saveFileName);
+                    string msg = "Get GPX HR/Cadence from TCX: Recalculated "
+                        + gpxFile + NL + "  from " + tcxFile + NL
+                        + "  Output is " + saveFileName
+                        + NL + "  " + res.Message;
+                    raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.MSG, NL + msg));
+                } else {
+                    return;
+                }
+            } catch (Exception ex) {
+                string msg = "Error getting GPX HR/Cadence from TCX";
+                raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.EXC, msg, ex));
+                return;
+            }
+        }
+
         public void deleteTcxTrackpoints() {
             string tcxFile = null;
             OpenFileDialog dlg = new OpenFileDialog();
@@ -824,6 +901,10 @@ namespace KEGpsUtils {
 
         private void OnGpxTcxConvertTcxToGpxClick(object sender, EventArgs e) {
             convertTcxToGpx();
+        }
+
+        private void OnGetGpxHrCadFromTcxClick(object sender, EventArgs e) {
+            getGpxHrCadFromTcx();
         }
 
         private void OnFindNearPOIFromGpxClick(object sender, EventArgs e) {

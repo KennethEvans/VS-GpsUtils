@@ -32,6 +32,10 @@
     <p align="left"><strong><em>UseInterval</em></strong></p>
     <p align="left">Uses the interval as specified. </p>
   </blockquote>
+  <h3 align="left">Get GPX HR/Cadence from TCX</h3>
+  <p align="left">Allows you to add or replace HR and cadence values in a GPX file, using the ones from a TCX file. This is a way to add missing HR or cadence information to a GPX file if there is a corresponding TCX file with HR and / or cadence values. GPX files from Polar tend to not have HR information, but the TCX ones do. It works even if the TCX file does not have latitude and longitude. Another way to do this is to convert the TCX file to a new GPX file (see above: <strong>Convert TCX to GPX</strong>). The latter method does not work, however, if there is no latitude and longitude information in the TCX file. (Note that a GPX file must have latitude and longitude information. A TCX file is not required to have it.) </p>
+  <p align="left">The HR and cadence values are obtained from the TCX file as a function of time. That function is linearly interpolated to get the values for HR and cadence for each track point in the GPX file using the time for that track point.</p>
+  <p align="left">All the tracks, segments, and track points in the GPX file and all the  Activity, Lap, and Track elements in the TCX file are processed. There will likely be a problem if different Track elements in the TCX file are overlapping in time.</p>
   <h3 align="left">Delete TCX Trackpoints</h3>
   <p align="left">Deletes trackpoints from a TCX file. There is a dialog where you can choose the start and end times for the deletion. These are displayed in UTC time, the same as is used in the file. Only the first Activity, Lap, and Track in the TCX file are processed. </p>
   <h3 align="left">Change TCX Times</h3>

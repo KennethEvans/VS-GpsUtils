@@ -30,7 +30,7 @@ namespace KEGpsUtils {
         /// finding POI near. They will be this factor times the current 
         /// specified distance.
         /// </summary>
-        public static double poiInterpDistanceFactor = 1.0/3.0;
+        public static double poiInterpDistanceFactor = 1.0 / 3.0;
 
         /// <summary>
         /// Used for StartTimeRounded.
@@ -796,6 +796,216 @@ namespace KEGpsUtils {
 
             return gpx;
         }
+
+        public static GpxResult getGpxHrCadFromTcx(string gpxFile, string tcxFile) {
+            TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(tcxFile);
+            gpx gpx = gpx.Load(gpxFile);
+
+            XElement root = gpx.Untyped.AncestorsAndSelf().First();
+            // Add the ns2 namespace if not already there
+            try {
+                root.Add(new XAttribute(XNamespace.Xmlns + "ns2",
+                    TrackPointExtensionsV2_NAMESPACE));
+            } catch (Exception) {
+                // Do nothing
+            }
+            XNamespace defaultNamespace = root.Name.NamespaceName;
+            gpx.creator = "GpxUtils " + Assembly.GetExecutingAssembly().
+                            GetName().Version.ToString();
+
+            // TCX types
+            AbstractSource_t author;
+
+            double lat, lon;
+            DateTime time;
+            short hr, cad;
+            short maxHr = -1;
+            short maxCad = -1;
+            List<Tuple<short, short, double>> timeList = new List<Tuple<short, short, double>>();
+            Tuple<short, short, double> tuple;
+            // Get lists of the hr, cad, and time
+            // Loop over activities
+            foreach (Activity_t activity in tcx.Activities.Activity) {
+                // Loop over laps (are like tracks in GPX)
+                foreach (ActivityLap_t lap in activity.Lap) {
+                    // Loop over tracks
+                    foreach (Track_t trk in lap.Track) {
+                        // Loop over trackpoints
+                        foreach (Trackpoint_t tpt in trk.Trackpoint) {
+                            lat = lon = Double.NaN;
+                            hr = -1;
+                            cad = -1;
+                            time = tpt.Time;
+                            if (tpt.HeartRateBpm != null) {
+                                hr = tpt.HeartRateBpm.Value;
+                            }
+                            if (tpt.Cadence != null) {
+                                cad = tpt.Cadence.Value;
+                            }
+                            if (hr > maxHr) maxHr = hr;
+                            if (cad > maxCad) maxCad = cad;
+                            tuple = new Tuple<short, short, double>(hr, cad, time.Ticks);
+                            timeList.Add(tuple);
+                        }  // End of trackpoints
+                    }  // End of tracks (segments)
+                }  // End of laps
+            } // End of activities
+
+            // Sort the timeList
+            timeList.Sort((s1, s2) => s1.Item3.CompareTo(s2.Item3));
+
+            bool doHr = maxHr > 0;
+            bool doCad = maxCad > 0;
+            if (!doCad && !doHr) {
+                return new GpxResult(null, "No non-zero hr or cad values found in TCX");
+            }
+
+            // GPX types
+            extensionsType extensions;
+
+            int nHr = 0;
+            int nCad = 0;
+            int nExistingHr = 0;
+            int nExistingCad = 0;
+            bool foundHr = false;
+            bool foundCad = false;
+            foreach (trkType trk in gpx.trk) {
+                foreach (trksegType seg in trk.trkseg) {
+                    foreach (wptType wpt in seg.trkpt) {
+                        if (wpt.time != null) {
+                            // Fix for bad times in Polar GPX
+                            time = wpt.time.Value.ToUniversalTime();
+                        } else {
+                            break;
+                        }
+                        // Interpolate to find new hr and cad
+                        tuple = interpolate(timeList, time);
+                        hr = tuple.Item1;
+                        cad = tuple.Item2;
+                        foundHr = foundCad = false;
+                        if (hr >= 0 || cad >= 0) {
+                            // See if there is an existing extensions
+                            extensions = wpt.extensions;
+                            if (extensions != null && extensions.Untyped != null) {
+                                XElement extensionsElement = extensions.Untyped;
+                                foreach (XElement element in extensionsElement.Elements()) {
+                                    if (element == null || !element.HasElements) continue;
+                                    foreach (XElement elem1 in from item in element.Descendants()
+                                                               select item) {
+                                        if (elem1.Name.LocalName == "hr") {
+                                            foundHr = true;
+                                            if (doHr) {
+                                                elem1.Value = $"{hr}";
+                                                nHr++;
+                                                nExistingHr++;
+                                            }
+                                            if (elem1.Name.LocalName == "cad") {
+                                                foundCad = true;
+                                                if (doCad) {
+                                                    elem1.Value = $"{cad}";
+                                                    nCad++;
+                                                    nExistingCad++;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if (doHr && !foundHr) {
+                                    XElement elemHr = new XElement(defaultNamespace
+                                      + "trackPointExtensionT",
+                                      new XElement(TrackPointExtensionsV2_NAMESPACE
+                                      + "hr", hr));
+                                    extensions.Untyped.Add(elemHr);
+                                    nHr++;
+                                }
+                                if (doCad && !foundCad) {
+                                    XElement elemHr = new XElement(defaultNamespace
+                                      + "trackPointExtensionT",
+                                      new XElement(TrackPointExtensionsV2_NAMESPACE
+                                      + "cad", cad));
+                                    extensions.Untyped.Add(elemHr);
+                                    nCad++;
+                                }
+                            } else {
+                                extensions = new extensionsType();
+                                extensions.Untyped.Name = defaultNamespace
+                                   + "extensions";
+                                wpt.extensions = extensions;
+                                if (doHr) {
+                                    XElement elemHr = new XElement(defaultNamespace
+                                      + "trackPointExtensionT",
+                                      new XElement(TrackPointExtensionsV2_NAMESPACE
+                                      + "hr", hr));
+                                    extensions.Untyped.Add(elemHr);
+                                    nHr++;
+                                }
+                                if (doCad) {
+                                    XElement elemHr = new XElement(defaultNamespace
+                                      + "trackPointExtensionT",
+                                      new XElement(TrackPointExtensionsV2_NAMESPACE
+                                      + "cad", cad));
+                                    extensions.Untyped.Add(elemHr);
+                                    nCad++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            string msg = $"Added {nHr - nExistingHr} and replaced {nExistingHr} HR values"
+                + NL + $"  Added {nCad - nExistingCad} and replaced {nExistingCad} Cadence values";
+            return new GpxResult(gpx, msg);
+        }
+
+        /// <summary>
+        /// Interpolates a timeList to get the interpolated values of hr, and cad.
+        /// Does not consider doHr or doCad.
+        /// Values returned will be 0 or greater, even iv all values are -1.
+        /// </summary>
+        /// <param name="timeList"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        public static Tuple<short, short, double> interpolate(
+            List<Tuple<short, short, double>> timeList, DateTime time) {
+            double ticks = time.Ticks;
+            int len = timeList.Count;
+            if (len == 0) return null;
+            if (len == 1) return timeList[0];
+            // len is at least 2
+            int t0 = 0;
+            int t1 = 1;
+            double val, timeVal, time0, time1;
+            short hr, cad;
+            for (int i = 0; i < len; i++) {
+                timeVal = timeList[i].Item3;
+                if (timeVal <= ticks) {
+                    t0 = i;
+                    t1 = i + 1;
+                } else {
+                    break;
+                }
+            }
+            if (t1 >= len) {
+                t0 = len - 2;
+                t1 = len - 1;
+            }
+            time0 = timeList[t0].Item3;
+            time1 = timeList[t1].Item3;
+            // Shouldn't happen
+            if (time0 == time1) return null;
+            val = timeList[t0].Item1 + (ticks - time0)
+                * (timeList[t1].Item1 - timeList[t0].Item1)
+                / (time1 - time0);
+            hr = (short)Math.Round(val);
+            if (hr < 0) hr = 0;
+            val = timeList[t0].Item2 + (ticks - time0)
+                * (timeList[t1].Item2 - timeList[t0].Item2)
+                / (time1 - time0);
+            cad = (short)Math.Round(val);
+            if (cad < 0) cad = 0;
+            return new Tuple<short, short, double>(hr, cad, ticks);
+        }
+
 
         public static TrainingCenterDatabase recalculateTcx(string fileName) {
             TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(fileName);
@@ -2087,7 +2297,7 @@ namespace KEGpsUtils {
                                 $"lat={lat:N8} lon={lon:N8} " +
                                 $"wptLat={(double)wpt.lat:N8} wptLon={(double)wpt.lon:N8} " +
                                 $"prevLat={prevLat:N8} prevLon={prevLon:N8}");
-# endif
+#endif
                             removedPois.Clear();
                             foreach (wptType poi in originalPois) {
                                 dist = greatCircleDistance(
