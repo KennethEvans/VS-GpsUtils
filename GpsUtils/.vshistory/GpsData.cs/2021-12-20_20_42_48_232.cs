@@ -814,7 +814,7 @@ namespace KEGpsUtils {
                             GetName().Version.ToString();
 
             // TCX types
-            //AbstractSource_t author;
+            AbstractSource_t author;
 
             double lat, lon;
             DateTime time;
