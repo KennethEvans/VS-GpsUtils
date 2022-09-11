@@ -797,6 +797,71 @@ namespace KEGpsUtils {
             return gpx;
         }
 
+        /// <summary>
+        /// Creates the contents for a CSV file with time and HR data from the
+        /// given TCX file.
+        /// </summary>
+        /// <param name="tcx">The input TCX.</param>
+        /// <returns>The contents of the CSV file</returns>
+        public static string convertTCXToSession(TrainingCenterDatabase tcx) {
+            const string sessionTimeFormat = "yyyy'-'MM'-'dd' 'HH':'mm':'ss'.'fff";
+            DateTime time, convTime;
+            double lat, lon, ele;
+            short hr;
+            string sep = ",";
+            string csv = "";
+            string timeStr, hrStr;
+            string tzId;
+            TimeZoneInfo tzi = null;
+            bool timeZoneDefined = false;
+            Position_t position;
+
+            // Loop over activities
+            foreach (Activity_t activity in tcx.Activities.Activity) {
+                // Loop over laps (are like tracks in GPX)
+                foreach (ActivityLap_t lap in activity.Lap) {
+                    // Loop over tracks
+                    foreach (Track_t trk in lap.Track) {
+                        // Loop over trackpoints
+                        foreach (Trackpoint_t tpt in trk.Trackpoint) {
+                            lat = lon = ele = Double.NaN;
+                            hr = -1;
+                            if (tpt.HeartRateBpm != null) {
+                                hr = tpt.HeartRateBpm.Value;
+                                hrStr = $"{hr}";
+                            } else {
+                                continue;
+                            }
+                            time = DateTime.MinValue;
+                            if (tpt.Time != null) {
+                                // Fix for bad times in Polar GPX
+                                time = tpt.Time.ToUniversalTime();
+                            } else {
+                                continue;
+                            }
+                            if (tpt.Position != null) {
+                                position = tpt.Position;
+                                lat = position.LatitudeDegrees;
+                                lon = position.LongitudeDegrees;
+                                if (!timeZoneDefined) {
+                                    timeZoneDefined = true;
+                                    tzId = getTimeZoneIdForLocation(lat, lon);
+                                    tzi = TimeZoneInfo.FindSystemTimeZoneById(tzId);
+                                }
+                                convTime = TimeZoneInfo.ConvertTimeFromUtc(time, tzi);
+                                timeStr = convTime.ToString(sessionTimeFormat);
+                            } else {
+                                continue;
+                            }
+                            csv += timeStr + sep + hrStr + sep + "Invalid" + NL;
+                        }  // End of trackpoints
+                    }  // End of tracks (segments)
+                }  // End of laps
+            } // End of activities
+
+            return csv;
+        }
+
         public static GpxResult getGpxHrCadFromTcx(string gpxFile, string tcxFile) {
             TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(tcxFile);
             gpx gpx = gpx.Load(gpxFile);

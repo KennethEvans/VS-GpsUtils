@@ -72,6 +72,8 @@ namespace KEGpsUtils {
                 new System.Windows.Forms.ToolStripSeparator();
             ToolStripMenuItem findNearPOIFromGpxToolStripMenuItem =
                 new System.Windows.Forms.ToolStripMenuItem();
+            ToolStripMenuItem convertTCXToSessionToolStripMenuItem =
+                new System.Windows.Forms.ToolStripMenuItem();
             ToolStripMenuItem singleFileInfoToolStripMenuItem =
                 new System.Windows.Forms.ToolStripMenuItem();
             ToolStripMenuItem useWholeIntervalToolStripMenuItem =
@@ -96,6 +98,7 @@ namespace KEGpsUtils {
             recalculateTCXToolStripMenuItem,
             fixGPXToolStripMenuItem,
             findNearPOIFromGpxToolStripMenuItem,
+            convertTCXToSessionToolStripMenuItem,
             toolStripSeparator2,
             singleFileInfoToolStripMenuItem});
             gpxTcxToolStripMenuItem.Name = "gpxTcxToolStripMenuItem";
@@ -219,6 +222,14 @@ namespace KEGpsUtils {
             findNearPOIFromGpxToolStripMenuItem.Text = "Find POI Near GPX...";
             findNearPOIFromGpxToolStripMenuItem.Click +=
                 new System.EventHandler(OnFindNearPOIFromGpxClick);
+            // 
+            // convertTCXToSessionToolStripMenuItem
+            // 
+            convertTCXToSessionToolStripMenuItem.Name = "convertTCXToSessionToolStripMenuItem";
+            convertTCXToSessionToolStripMenuItem.Size = new System.Drawing.Size(544, 54);
+            convertTCXToSessionToolStripMenuItem.Text = "Convert TCX to Session File...";
+            convertTCXToSessionToolStripMenuItem.Click +=
+                new System.EventHandler(OnConvertTCXToSessionClick);
             // 
             // singleFileInfoToolStripMenuItem
             // 
@@ -426,6 +437,44 @@ namespace KEGpsUtils {
                 }
             } catch (Exception ex) {
                 string msg = "Error finding Near POI from GPX";
+                raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.EXC, msg, ex));
+                return;
+            }
+        }
+
+        public void convertTCXToSession() {
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.Filter = "TCX|*.tcx";
+            dlg.Title = "Select files to convert";
+            dlg.Multiselect = true;
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                if (dlg.FileNames == null) {
+                    string msg = "Convert TCX to Session file: Failed to open files to convert";
+                    raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.WARN, msg));
+                    return;
+                }
+                string[] fileNames = dlg.FileNames;
+                foreach (string fileName in fileNames) {
+                    convertTCXToSession(fileName);
+                }
+            }
+        }
+
+        public void convertTCXToSession(string fileName) {
+            TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(fileName);
+            string csv = GpsData.convertTCXToSession(tcx);
+            try {
+                if (csv != null) {
+                    fileName = Path.ChangeExtension(fileName, ".csv");
+                    string saveFilename = getSaveName(fileName, ".session");
+                    if (saveFilename != null) {
+                        using (StreamWriter sw = File.CreateText(saveFilename)) {
+                            sw.Write(csv);
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                string msg = "Error converting TCX to Session file";
                 raiseGpxTcxEvent(new GpxTcxEventArgs(EventType.EXC, msg, ex));
                 return;
             }
@@ -909,6 +958,10 @@ namespace KEGpsUtils {
 
         private void OnFindNearPOIFromGpxClick(object sender, EventArgs e) {
             findNearPOIFromGpx();
+        }
+
+        private void OnConvertTCXToSessionClick(object sender, EventArgs e) {
+            convertTCXToSession();
         }
     }
 

@@ -10,7 +10,6 @@
 <p align="left">GPX Utils is a C# class library that provides a number of methods useful in manipulating GPS Exchange Format (GPX) files and Training Center Database (TCX) files. It provides a menu (see below) that can be used in other applications such as <a href="https://github.com/KennethEvans/VS-GpxViewer">GPX Viewer</a> and <a href="https://github.com/KennethEvans/VS-Exercise-Analyzer">Exercise Analyzer</a>. </p>
 <p align="left">Currently only GPX 1.1 is supported. Extensions, such as Garmin's TrackPointExtensionv2, that give heart rate and cadence are supported.</p>
 <h2>GPX / TCX  Menu </h2>
-<blockquote>
   <h3 align="left">Format TCX/GPX</h3>
   <p align="left">Formats a TCX or GPX file in a form that is easily read by humans. </p>
   <h3 align="left">Format XML</h3>
@@ -26,12 +25,10 @@
   <p align="left">There are two modes. In both modes you will have a dialog to chose a start and end time. The TCX file will only be corrected in this interval (including the start and end times). The start and end times need to be specified in UTC time, which is the time listed in the TCX and GPX file. The initial times are the start and end times of the TCX file. You can edit these. There are three decimal points to prevent round off if you are unsure. Only time values actually in the TCX file are used so that this relationship holds.</p>
   <p align="left" class="Code"> start &lt;= actualStart &lt; actualEnd &lt;= end </p>
   <p align="left">There are two sub items</p>
-  <blockquote>
     <p align="left"><strong><em> MatchLatLon Mode</em></strong></p>
     <p align="left">Determines the actual interval by matching the latitude and longitude of the start and end points from the GPX file in the TCX file.  If no match is found for the start (because the GPS was inaccurate at the start), it starts at the start time you specified. It will not go past the specified end time. </p>
     <p align="left"><strong><em>UseInterval</em></strong></p>
     <p align="left">Uses the interval as specified. </p>
-  </blockquote>
   <h3 align="left">Get GPX HR/Cadence from TCX</h3>
   <p align="left">Allows you to add or replace HR and cadence values in a GPX file, using the ones from a TCX file. This is a way to add missing HR or cadence information to a GPX file if there is a corresponding TCX file with HR and / or cadence values. GPX files from Polar tend to not have HR information, but the TCX ones do. It works even if the TCX file does not have latitude and longitude. Another way to do this is to convert the TCX file to a new GPX file (see above: <strong>Convert TCX to GPX</strong>). The latter method does not work, however, if there is no latitude and longitude information in the TCX file. (Note that a GPX file must have latitude and longitude information. A TCX file is not required to have it.) </p>
   <p align="left">The HR and cadence values are obtained from the TCX file as a function of time. That function is linearly interpolated to get the values for HR and cadence for each track point in the GPX file using the time for that track point.</p>
@@ -50,9 +47,15 @@
   <p align="left">In the event Polar Access fixes this issue, this menu item will only add the category and location if it can. If no changes are necessary, the file will not be modified, so it should be safe to run it on files that have already been fixed or that do not have the time issue. </p>
   <h3 align="left">Find POI Near GPX</h3>
   <p align="left">Calculates which of a set of Points of Interest (POI)  are within a specified distance of the tracks and/or routes in a GPX file. You will be prompted for the GPX file with the tracks/routes, then for the GPX file with waypoints representing the POI's, and then for the distance. (The POI file can be the same as the one with the tracks/routes.) The distance is specified as a number plus a space plus the units, which may be ft, mi, m, or km. (Example: 10 mi) It will find all the POI's that are within the given distance from any track or route point in the tracks/routes file. (Typically, however, there would only be one track or route, your choice.) The results are saved in a GPX file with the found POI's. It interpolates points along the track or route at a distance along the track or route of 1/3 the specified distance in case the track or route points are far apart. It only checks for POI's within a circle from those points, though, so some POI's along the outer limits could be missed if they lie where the circles do not overlap. All points within 89% of the specified distance should be within the overlapping circles. </p>
+  <h3 align="left">Convert TCX to Session File </h3>
+  <p align="left">Converts the TCX file to a CSV file (used on other programs by the same author). Each row has three columns:</p>
+  <ul>
+    <li>Time: Of the form  &quot;yyyy-MM-dd HH:mm:s.fff&quot;, for example, 2022-09-09 09:28:06.000.</li>
+    <li>Heart Rate: An integer.</li>
+    <li>RR Value: Is always &quot;Invalid&quot; as there is not RR information in a TCX file. </li>
+  </ul>
   <h3 align="left">Single File Info </h3>
   <p align="left">Shows extensive information from the selected files. This information is shown in the log dialog. </p>
-</blockquote>
 <h2 align="left">Installation</h2>
 <p>If you are installing from a download, just unzip the files into a directory somewhere convenient. Then run it from there. If you are installing from a build, copy all the files and directories from the bin/Release directory into a directory somewhere convenient.</p>
 <p>To uninstall, just delete these files.</p>
